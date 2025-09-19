@@ -1,0 +1,17 @@
+{
+  "folders": [
+    {
+      "name": "superproject",
+      "path": "."
+    },
+    {
+      "name": "PLPWebPage",
+      "path": "PLPWebPage"
+    },
+    {
+      "name": "PLPServer",
+      "path": "PLPServer"
+    }
+  ],
+  "settings": {}
+}

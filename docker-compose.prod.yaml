@@ -1,0 +1,52 @@
+name: plp
+
+services:
+  db:
+    image: postgres:17
+    restart: always
+    shm_size: '128mb'
+    environment:
+      POSTGRES_USER_FILE: /run/secrets/postgres-user
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres-password
+      POSTGRES_DB: plp_database
+      #POSTGRES_INITDB_ARGS_FILE: /run/secrets/postgres-initdb-args # if i want more, look into custom image ala https://hub.docker.com/_/postgres#initialization-scripts
+    secrets:
+      - postgres-user
+      - postgres-password
+      #- postgres-initdb-args
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - plp-network
+  server:
+    depends_on:
+      - db
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      #TODO: make custom user
+      DATABASE_URL: "postgresql://${POSTGRES_ROOT_USER}:${POSTGRES_ROOT_PWD}@db:5432/plp_database"
+    networks:
+      - plp-network
+    ports:
+      - 127.0.0.1:5001:80
+  #TODO: add reverse proxy to prod version
+    
+
+networks:
+  plp-network:
+    driver: bridge
+
+volumes:
+  pgdata:
+
+secrets:
+  postgres-user:
+    environment: POSTGRES_ROOT_USER
+  postgres-password:
+    environment: POSTGRES_ROOT_PWD
+  #postgres-initdb-args:
+  #  file: ./secrets/postgres-initdb-args.txt

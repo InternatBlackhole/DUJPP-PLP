@@ -1,0 +1,38 @@
+
+services:
+  db:
+    image: postgres:17
+    restart: always
+    shm_size: '128mb'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - plp-network
+  
+  server:
+    image: mcr.microsoft.com/dotnet/sdk:8.0
+    #user: ${UID:-1000}:${GID:-1000}
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@db:5432/plp_database"
+    volumes:
+      - ./PLPServer:/app:ro
+    working_dir: /app
+    networks:
+      - plp-network
+    ports:
+      - "127.0.0.1:5080:80"
+      - "127.0.0.1:5443:443"
+
+networks:
+  plp-network:
+    driver: bridge
+
+volumes:
+  pgdata:
