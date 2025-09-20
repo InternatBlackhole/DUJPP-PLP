@@ -7,6 +7,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: plp_database
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
@@ -16,19 +17,30 @@ services:
   
   server:
     image: mcr.microsoft.com/dotnet/sdk:8.0
-    #user: ${UID:-1000}:${GID:-1000}
     depends_on:
       - db
     environment:
-      DATABASE_URL: "postgresql://postgres:postgres@db:5432/plp_database"
+      DATABASE_URL: ${DATABASE_URL}
     volumes:
       - ./PLPServer:/app:ro
+      - csobj:/app/obj:rw
+      - ./PLPServer/bin:/app/bin:rw
+    command: "dotnet watch run --launch-profile httpDocker --non-interactive" # add --non-interactive?
     working_dir: /app
+    #tty: true
+    #stdin_open: true
     networks:
       - plp-network
     ports:
-      - "127.0.0.1:5080:80"
-      - "127.0.0.1:5443:443"
+      - "127.0.0.1:5077:5077"
+      #- "127.0.0.1:5443:443"
+    develop:
+      watch:
+        - action: sync
+          path: ./PLPServer
+          target: /app
+          ignore:
+            - "*.http"
 
 networks:
   plp-network:
@@ -36,3 +48,4 @@ networks:
 
 volumes:
   pgdata:
+  csobj:
