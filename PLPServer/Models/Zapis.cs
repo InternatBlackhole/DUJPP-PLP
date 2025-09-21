@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
 namespace PLPServer.Models;
@@ -35,7 +36,7 @@ public class Pogodba
     public Guid PrevoznikId { get; set; }
 
     public required Linija Linija { get; set; }
-    public required  Prevoznik Prevoznik { get; set; }
+    public required Prevoznik Prevoznik { get; set; }
 
     public required string Narocnik { get; set; } //TODO: naredi v pravega naročnika
 
