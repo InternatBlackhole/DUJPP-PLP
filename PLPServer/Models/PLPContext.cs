@@ -1,14 +1,20 @@
 
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace PLPServer.Models;
 
-public class PLPContext : DbContext
+public class PLPContext : IdentityDbContext<BaseUser, BaseRole, Guid>
 {
     public PLPContext(DbContextOptions<PLPContext> options)
     : base(options)
     {
     }
+
+    public DbSet<BaseUser> Uporabniki { get; set; }
+    public DbSet<Prevoznik> Prevozniki { get; set; }
+    public DbSet<Inspektor> Inspektorji { get; set; }
+    public DbSet<Administrator> Administratorji { get; set; }
 
     public DbSet<Zapis> Zapisi { get; set; }
     public DbSet<Linija> Linije { get; set; }
@@ -17,6 +23,14 @@ public class PLPContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        //TPH model
+        modelBuilder.Entity<BaseUser>()
+            .ToTable("Uporabniki")
+            .HasDiscriminator<string>("Tip")
+            .HasValue<Prevoznik>("prevoznik")
+            .HasValue<Inspektor>("inspektor")
+            .HasValue<Administrator>("admin");
 
         modelBuilder.Entity<Zapis>().ToTable("Zapisi");
         modelBuilder.Entity<Linija>().ToTable("Linije");

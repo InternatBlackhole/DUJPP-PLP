@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.CodeAnalysis.Elfie.Serialization;
 using Microsoft.VisualBasic;
@@ -10,14 +11,14 @@ public static class InitData
 {
     public static async Task<IdentityResult> CreateRoles(this IServiceProvider provider)
     {
-        var roleManager = provider.GetService<RoleManager<IdentityRole>>() ?? throw new Exception("no roleManager!");
+        var roleManager = provider.GetRequiredService<RoleManager<BaseRole>>();
 
         foreach (var role in new[] { Roles.Prevoznik, Roles.Inspektor, Roles.Admin })
         {
             IdentityResult r;
             if (!await roleManager.RoleExistsAsync(role.ToString()))
             {
-                r = await roleManager.CreateAsync(new IdentityRole(role.ToString()));
+                r = await roleManager.CreateAsync(new BaseRole(Guid.NewGuid(), role.ToString()));
                 if (r != IdentityResult.Success)
                     return r;
             }
@@ -29,30 +30,37 @@ public static class InitData
     {
         var userManager = provider.GetRequiredService<UserManager<BaseUser>>();
 
-        BaseUser UserInit(string email)
+        TUser UserInit<TUser>(string email, Action<TUser>? action = null) where TUser : BaseUser, new()
         {
-            return new BaseUser()
+            var match = Regex.Match(email, "^(?<name>\\w+)@.*");
+            var name = match.Groups["name"].Value;
+
+            var usr = new TUser()
             {
-                Email = email
+                Email = email,
+                UserName = name
             };
+
+            action?.Invoke(usr);
+            return usr;
         }
 
         var admins = new Dictionary<BaseUser, string>
         {
-            { UserInit("admin@test.com"), "adminTest" },
+            { UserInit<Administrator>("admin@test.com"), "0adminTest;" },
         };
 
         var prevozniki = new Dictionary<BaseUser, string>
         {
-            { UserInit("prevoznik1@test.com"), "prevoznik1"},
-            { UserInit("prevoznik2@test.com"), "prevoznik1"},
-            { UserInit("prevoznik3@test.com"), "prevoznik1"},
+            { UserInit<Prevoznik>("prevoznik1@test.com"), "Prevoznik1!"},
+            { UserInit<Prevoznik>("prevoznik2@test.com"), "Prevoznik1!"},
+            { UserInit<Prevoznik>("prevoznik3@test.com"), "Prevoznik1!"},
         };
 
         var inspektorji = new Dictionary<BaseUser, string>
         {
-            { UserInit("inspektor1@test.com"), "inspektor"},
-            { UserInit("inspektor2@test.com"), "inspektor"},
+            { UserInit<Inspektor>("inspektor1@test.com"), "Inspekt0r!"},
+            { UserInit<Inspektor>("inspektor2@test.com"), "Inspekt0r!"},
         };
 
         var users = new Dictionary<string, Dictionary<BaseUser, string>>
@@ -62,17 +70,13 @@ public static class InitData
             {Roles.Inspektor, inspektorji},
         };
 
-        List<Task<IdentityResult>> tasks = new List<Task<IdentityResult>>();
-
         foreach (var (role, roleUsers) in users)
         {
             foreach (var (user, pwd) in roleUsers)
             {
-                tasks.Add(UserBuilder.Builder(user).AddRole(role).Create(userManager, pwd));
+                var res = await UserBuilder.Builder(user).AddRole(role).Create(userManager, pwd);
             }
         }
-
-        await Task.WhenAll(tasks);
     }
 
     public class UserBuilder

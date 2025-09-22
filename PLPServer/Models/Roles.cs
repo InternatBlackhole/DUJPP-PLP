@@ -11,5 +11,10 @@ public static class Roles
 
 public class BaseRole : IdentityRole<Guid>
 {
-    
+    public BaseRole(Guid id, string name) : base(name)
+    {
+        Id = id;
+    }
 }
+
+//public class t : ISign
