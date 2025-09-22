@@ -1,10 +1,4 @@
-using System.Diagnostics;
-using System.Net;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.CodeAnalysis.Differencing;
-using Microsoft.CodeAnalysis.Elfie.Diagnostics;
-using Microsoft.CodeAnalysis.FlowAnalysis.DataFlow;
 using Microsoft.EntityFrameworkCore;
 using PLPServer.Data;
 using PLPServer.Models;
@@ -13,11 +7,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers();
+builder.Services.AddControllers(opts => { });
 builder.Services.AddDbContextFactory<PLPContext>(opt =>
-{
-    opt.UseNpgsql(builder.Configuration.GetConnectionString("MainDatabase"));
-}); //or AddDbContext
+    opt//.UseLazyLoadingProxies()
+        .UseNpgsql(builder.Configuration.GetConnectionString("MainDatabase"))
+
+); //or AddDbContext
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -36,8 +31,8 @@ builder.Services
     })
     //.AddRoles<BaseRole>()
     .AddEntityFrameworkStores<PLPContext>() //TODO: possibly separate Auth and everything else
-    // Adds SignInManager and emailer stuff. Since I will make my own API endpoints i have to add it myself
-    //.AddApiEndpoints();
+                                            // Adds SignInManager and emailer stuff. Since I will make my own API endpoints i have to add it myself
+                                            //.AddApiEndpoints();
     .AddSignInManager()
     // For prop tokens
     .AddDefaultTokenProviders();
@@ -50,19 +45,31 @@ builder.Services.ConfigureApplicationCookie(opts =>
 
 var app = builder.Build();
 
-// In debug create database
-if (app.Environment.IsDevelopment())
+using (var scope = app.Services.CreateScope())
 {
-    using var scope = app.Services.CreateScope();
     var context = scope.ServiceProvider.GetRequiredService<PLPContext>();
 
-    context.Database.EnsureDeleted();
-    context.Database.EnsureCreated();
+    // In debug create database
+    if (app.Environment.IsDevelopment())
+    {
+        var dotnetWatchVar = Environment.GetEnvironmentVariable("DOTNET_WATCH_ITERATION");
+        var dotnetWatchCounter = string.IsNullOrEmpty(dotnetWatchVar) ? 0 : int.Parse(dotnetWatchVar);
+
+        var isInDebugger = Environment.GetEnvironmentVariable("INDEBUGGER") == "true";
+
+        if (dotnetWatchCounter == 1 || isInDebugger)
+            await context.Database.EnsureDeletedAsync();
+        await context.Database.EnsureCreatedAsync();
+    }
+    else if (app.Environment.IsProduction())
+    {
+        await context.Database.MigrateAsync();
+    }
 }
 
 using (var scope = app.Services.CreateScope())
 {
-    var res = await scope.ServiceProvider.CreateRoles();
+    var res = await InitData.CreateRoles(scope.ServiceProvider);
     if (res != IdentityResult.Success)
     {
         app.Logger.LogError("Couldn't create roles! Error: {0}", res.Errors);
@@ -71,7 +78,7 @@ using (var scope = app.Services.CreateScope())
 
     if (app.Environment.IsDevelopment())
     {
-        await scope.ServiceProvider.SeedTestUsers();
+        await InitData.SeedTestData(scope.ServiceProvider);
     }
 }
 
