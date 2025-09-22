@@ -6,15 +6,20 @@ namespace PLPServer.Models;
 
 public class Zapis
 {
-    //[Key]
+    [Key]
     public Guid Id { get; set; }
+    public Guid PogodbaId { get; set; }
 
     [DataType(DataType.DateTime)]
     [Required]
-    public required DateTime CasVoznje { get; set; }
+    public DateTime ZacetekVoznje { get; set; }
+
+    [DataType(DataType.DateTime)]
+    [Required]
+    public DateTime KonecVoznje { get; set; }
 
     [Required]
-    public required Pogodba Pogodba { get; set; }
+    public Pogodba? Pogodba { get; set; }
 }
 
 public class Linija
@@ -22,23 +27,31 @@ public class Linija
     [Key]
     public Guid Id { get; set; }
 
+    public Guid NarocnikId { get; set; }
+
     [Required]
-    public required string NazivNarocnika { get; set; }
+    public required string Ime { get; set; }
 
-
-    public required ICollection<Pogodba> Pogodbe { get; set; }
+    [Required]
+    public Narocnik? Narocnik { get; set; }
+    public ICollection<Pogodba>? Pogodbe { get; set; }
 }
 
-[PrimaryKey(nameof(LinijaId), nameof(PrevoznikId))]
+//[PrimaryKey(nameof(LinijaId), nameof(PrevoznikId))]
 public class Pogodba
 {
+    [Key]
+    public Guid Id { get; set; }
     public Guid LinijaId { get; set; }
     public Guid PrevoznikId { get; set; }
 
-    public required Linija Linija { get; set; }
-    public required Prevoznik Prevoznik { get; set; }
+    public Linija? Linija { get; set; }
+    public Prevoznik? Prevoznik { get; set; }
 
-    public required string Narocnik { get; set; } //TODO: naredi v pravega naročnika
+    [Required]
+    [DataType(DataType.Currency)]
+    public required double Znesek { get; set; }
 
-    public double Znesek { get; set; }
+
+    public ICollection<Zapis>? Voznje { get; set; }
 }

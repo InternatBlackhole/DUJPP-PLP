@@ -12,8 +12,7 @@ public class BaseUser : IdentityUser<Guid>
 
 public class Prevoznik : BaseUser
 {
-    public ICollection<Zapis>? Prevozi { get; set; }
-
+    //virtual for lazy loading
     public ICollection<Pogodba>? Pogodbe { get; set; }
 }
 
@@ -25,4 +24,13 @@ public class Inspektor : BaseUser
 public class Administrator : BaseUser
 {
 
+}
+
+public class Narocnik
+{
+    public Guid Id { get; set; }
+
+    public required string Ime { get; set; }
+
+    public ICollection<Linija>? Linije { get; set; }
 }
