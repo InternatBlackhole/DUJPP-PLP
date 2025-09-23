@@ -46,32 +46,17 @@ builder.Services.ConfigureApplicationCookie(opts =>
 
 var app = builder.Build();
 
+var dotnetWatchVar = Environment.GetEnvironmentVariable("DOTNET_WATCH_ITERATION");
+var dotnetWatchCounter = string.IsNullOrEmpty(dotnetWatchVar) ? 0 : int.Parse(dotnetWatchVar);
+
+var isInDebugger = Environment.GetEnvironmentVariable("INDEBUGGER") == "true";
+var dbCleanSlate = dotnetWatchCounter == 1 || isInDebugger;
+
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<PLPContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 
-    // In debug create database
-    if (app.Environment.IsDevelopment())
-    {
-        var dotnetWatchVar = Environment.GetEnvironmentVariable("DOTNET_WATCH_ITERATION");
-        var dotnetWatchCounter = string.IsNullOrEmpty(dotnetWatchVar) ? 0 : int.Parse(dotnetWatchVar);
-
-        var isInDebugger = Environment.GetEnvironmentVariable("INDEBUGGER") == "true";
-
-        if (dotnetWatchCounter == 1 || isInDebugger)
-        {
-            await context.Database.EnsureDeletedAsync();
-            await context.Database.EnsureCreatedAsync();
-        }
-    }
-        else if (app.Environment.IsProduction())
-        {
-            await context.Database.MigrateAsync();
-        }
-}
-
-using (var scope = app.Services.CreateScope())
-{
     var res = await InitData.CreateRoles(scope.ServiceProvider);
     if (res != IdentityResult.Success)
     {
@@ -79,10 +64,28 @@ using (var scope = app.Services.CreateScope())
         throw new Exception("Couldn't create roles!");
     }
 
+    // In debug create database
     if (app.Environment.IsDevelopment())
     {
-        await InitData.SeedTestData(scope.ServiceProvider);
+        if (dbCleanSlate)
+        {
+            logger.LogInformation("dotnetWatchCounter: {}, isInDebugger: {}", dotnetWatchVar, isInDebugger);
+            await context.Database.EnsureDeletedAsync();
+            await context.Database.EnsureCreatedAsync();
+
+            // Reinit test data
+            await InitData.SeedTestData(scope.ServiceProvider);
+        }
     }
+    else if (app.Environment.IsProduction())
+    {
+        await context.Database.MigrateAsync();
+    }
+}
+
+using (var scope = app.Services.CreateScope())
+{
+    
 }
 
 // After DB init 
@@ -99,7 +102,7 @@ else
     app.UseExceptionHandler(); //remove if stuff is wrong
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 //app.UseRouting(); // maybe remove?
 
@@ -113,7 +116,7 @@ app.UseAuthorization();
 //var apiPrefix = app.MapGroup("/api");
 
 app.MapGroup("/auth").MapAuthEndpoints();
-app.MapGroup("/zapisi").MapZapisiEndpoints().
+app.MapGroup("/zapisi").MapZapisiEndpoints();
 
 app.MapControllers();
 
