@@ -16,7 +16,8 @@ namespace PLPServer.Controllers;
 /// <summary>
 /// Login request for user sign in.
 /// </summary>
-public sealed class LoginRequest {
+public sealed class LoginRequest
+{
 
     /// <summary>
     /// The user's email address
@@ -39,6 +40,8 @@ public static class Authentication
         builder.MapPost("login", Login);
 
         builder.MapPost("logout", Logout);
+
+        builder.MapGet("whoami", WhoAmI);
 
         return builder;
     }
@@ -96,5 +99,29 @@ public static class Authentication
 
         await signInManager.SignOutAsync();
         return TypedResults.Ok();
+    }
+
+    public static async Task<Results<Ok<UserInfo>, UnauthorizedHttpResult>> WhoAmI(
+        HttpContext context,
+        [FromServices] UserManager<BaseUser> userManager
+    )
+    {
+        var user = await userManager.GetUserAsync(context.User);
+        if (user == null)
+            return TypedResults.Unauthorized();
+
+        return TypedResults.Ok(new UserInfo()
+        {
+            Id = user.Id,
+            Email = user.Email ?? "",
+            UserName = user.UserName ?? "",
+        });
+    }
+
+    public record UserInfo
+    {
+        public Guid Id { get; set; }
+        public required string UserName { get; set; }
+        public required string Email { get; set; }
     }
 }
