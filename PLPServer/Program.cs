@@ -122,6 +122,8 @@ app.UseAuthorization();
 
 app.MapGroup("/auth").MapAuthEndpoints();
 app.MapGroup("/zapisi").MapZapisiEndpoints();
+app.MapGroup("/linije").MapLinijeEndpoints();
+app.MapGroup("/pogodbe").MapPogodbeEndpoints();
 
 app.MapControllers();
 
