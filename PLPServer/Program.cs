@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using PLPServer.Controllers;
 using PLPServer.Data;
 using PLPServer.Models;
 
@@ -58,13 +59,15 @@ using (var scope = app.Services.CreateScope())
         var isInDebugger = Environment.GetEnvironmentVariable("INDEBUGGER") == "true";
 
         if (dotnetWatchCounter == 1 || isInDebugger)
+        {
             await context.Database.EnsureDeletedAsync();
-        await context.Database.EnsureCreatedAsync();
+            await context.Database.EnsureCreatedAsync();
+        }
     }
-    else if (app.Environment.IsProduction())
-    {
-        await context.Database.MigrateAsync();
-    }
+        else if (app.Environment.IsProduction())
+        {
+            await context.Database.MigrateAsync();
+        }
 }
 
 using (var scope = app.Services.CreateScope())
@@ -86,14 +89,31 @@ using (var scope = app.Services.CreateScope())
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
+    app.UseDeveloperExceptionPage();
+
     app.UseSwagger();
     app.UseSwaggerUI();
+}
+else
+{
+    app.UseExceptionHandler(); //remove if stuff is wrong
 }
 
 app.UseHttpsRedirection();
 
+//app.UseRouting(); // maybe remove?
+
+//app.UseCookiePolicy();
+
 app.UseAuthentication();
 app.UseAuthorization();
+
+//ENDPOINTS GO HERE!!
+
+//var apiPrefix = app.MapGroup("/api");
+
+app.MapGroup("/auth").MapAuthEndpoints();
+app.MapGroup("/zapisi").MapZapisiEndpoints().
 
 app.MapControllers();
 

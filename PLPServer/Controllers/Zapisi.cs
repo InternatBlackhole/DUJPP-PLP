@@ -1,4 +1,5 @@
 
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -8,37 +9,37 @@ using PLPServer.Models;
 
 namespace PLPServer.Controllers;
 
-[ApiController]
-[Route("/zapisi")]
-public class ZapisiController : ControllerBase
+public static class Zapisi
 {
 
-    private readonly UserManager<BaseUser> userManager;
-    private readonly PLPContext mainDb;
-
-    private readonly ILogger<ZapisiController> logger;
-
-    public ZapisiController(UserManager<BaseUser> userManager, PLPContext context, ILogger<ZapisiController> logger)
+    public static IEndpointRouteBuilder MapZapisiEndpoints(this IEndpointRouteBuilder builder)
     {
-        this.userManager = userManager;
-        this.mainDb = context;
-        this.logger = logger;
+
+        builder.MapGet("/optimized", All);
+
+        return builder;
     }
 
-    [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<MainPageZapisek>))]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> All(
+    public static async Task<Results<Ok<List<MainPageZapis>>, BadRequest<string>, UnauthorizedHttpResult, NotFound>> All(
+        HttpContext context,
+        [FromServices] UserManager<BaseUser> userManager,
+        [FromServices] ILogger logger,
+        [FromServices] PLPContext mainDb,
         [FromQuery] int startIndex = 0,
         [FromQuery] int limit = 10
     )
     {
-        if (User.Identity?.IsAuthenticated != true)
-            return Unauthorized();
+        if (context.User.Identity?.IsAuthenticated != true)
+            return TypedResults.Unauthorized();
+
+        if (startIndex < 0)
+            return TypedResults.BadRequest("startIndex is lower than 0!");
+
+        if (limit < 0)
+            return TypedResults.BadRequest("limit os lower than 0!");
 
         // should not be null if we are authenticated
-        var dbUser = await userManager.GetUserAsync(User);
+        var dbUser = await userManager.GetUserAsync(context.User);
 
         if (dbUser == null)
         {
@@ -58,7 +59,7 @@ public class ZapisiController : ControllerBase
             Inspektor or Administrator => mainDb.Zapisi.AsQueryable()
         };
         var res = await zapisi
-        .Select(z => new MainPageZapisek()
+        .Select(z => new MainPageZapis()
         {
             ZacetekVoznje = z.ZacetekVoznje,
             KonecVoznje = z.KonecVoznje,
@@ -72,11 +73,11 @@ public class ZapisiController : ControllerBase
         .Skip(startIndex)
         .Take(limit)
         .ToListAsync();
-        return Ok(res);
+        return TypedResults.Ok(res);
     }
 }
 
-public record MainPageZapisek
+public record MainPageZapis
 {
     public DateTime ZacetekVoznje { get; set; }
     public DateTime KonecVoznje { get; set; }

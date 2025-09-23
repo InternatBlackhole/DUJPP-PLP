@@ -6,7 +6,9 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Elfie.Serialization;
+using Microsoft.DotNet.Scaffolding.Shared.T4Templating;
 using PLPServer.Models;
 
 namespace PLPServer.Controllers;
@@ -29,42 +31,30 @@ public sealed class LoginRequest {
     public required string Password { get; init; }
 }
 
-[ApiController]
-[Route("/auth")]
-public class AuthController : ControllerBase
+public static class Authentication
 {
-
-    private readonly UserManager<BaseUser> userManager;
-    private readonly SignInManager<BaseUser> signInManager;
-    private readonly PLPContext mainDb;
-    private readonly ILogger<AuthController> logger;
-
-    public AuthController(UserManager<BaseUser> userManager, PLPContext context, SignInManager<BaseUser> signInManager, ILogger<AuthController> logger)
+    public static IEndpointRouteBuilder MapAuthEndpoints(this IEndpointRouteBuilder builder)
     {
-        this.userManager = userManager;
-        mainDb = context;
-        this.signInManager = signInManager;
-        this.logger = logger;
+
+        builder.MapPost("login", Login);
+
+        builder.MapPost("logout", Logout);
+
+        return builder;
     }
 
-
-
-    [HttpPost("login")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [RequireHttps]
-    public async Task<IActionResult> Login(
+    private static async Task<Results<Ok, BadRequest<string>, UnauthorizedHttpResult>> Login(
         [FromBody] LoginRequest login,
         [FromServices] IServiceProvider sp,
+        [FromServices]
         [FromQuery] bool? useCookies,
         [FromQuery] bool? useSessionCookies)
     {
         if (string.IsNullOrEmpty(login.Email))
-            return BadRequest("Email is empty");
+            return TypedResults.BadRequest("Email is empty");
 
         if (string.IsNullOrEmpty(login.Password))
-            return BadRequest("Password is empty");
+            return TypedResults.BadRequest("Password is empty");
 
         var signInManager = sp.GetRequiredService<SignInManager<BaseUser>>();
         var userManager = sp.GetRequiredService<UserManager<BaseUser>>();
@@ -73,37 +63,38 @@ public class AuthController : ControllerBase
         var isPersistant = (useCookies == true) && (useSessionCookies != true);
 
         if (!useCookiesScheme)
-            return Unauthorized("token authentication not possible yet");
+            return TypedResults.Unauthorized();
 
         signInManager.AuthenticationScheme = useCookiesScheme ? IdentityConstants.ApplicationScheme : IdentityConstants.BearerScheme;
 
         var user = await userManager.FindByEmailAsync(login.Email);
 
         if (user == null)
-            return BadRequest("Email or password incorrect!");
+            return TypedResults.BadRequest("Email or password incorrect!");
 
 
         var res = await signInManager.PasswordSignInAsync(user, login.Password, isPersistant, false);
 
         if (!res.Succeeded)
         {
-            return Unauthorized(res);
+            return TypedResults.Unauthorized();
         }
 
         //SignInManager should set the cookie
-        return Ok();
+        return TypedResults.Ok();
     }
 
-    [HttpPost("logout")]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> Logout()
+    public static async Task<Results<UnauthorizedHttpResult, Ok>> Logout(
+        HttpContext context,
+        [FromServices] UserManager<BaseUser> userManager,
+        [FromServices] SignInManager<BaseUser> signInManager
+    )
     {
-        var user = await userManager.GetUserAsync(User);
+        var user = await userManager.GetUserAsync(context.User);
         if (user == null)
-            return Unauthorized();
+            return TypedResults.Unauthorized();
 
         await signInManager.SignOutAsync();
-        return Ok();
+        return TypedResults.Ok();
     }
 }
