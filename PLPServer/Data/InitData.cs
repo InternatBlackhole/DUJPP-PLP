@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.CodeAnalysis.Elfie.Serialization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.VisualBasic;
 using Npgsql.TypeMapping;
 using PLPServer.Models;
@@ -173,8 +174,8 @@ public static partial class InitData
 
         foreach (var (user, pwd) in users)
         {
-            var role = user.UserToRole();
-            await UserBuilder.Builder(user).AddRole(role).Create(userManager, pwd);
+            //var role = user.UserToRole();
+            await UserBuilder.Builder(user)/*.AddRole(role)*/.Create(userManager, pwd);
         }
 
         // insert linje
@@ -186,7 +187,7 @@ public static partial class InitData
         await mainDb.SaveChangesAsync();
     }
 
-    public static async Task<IdentityResult> CreateRoles(IServiceProvider provider)
+    /*public static async Task<IdentityResult> CreateRoles(IServiceProvider provider)
     {
         var roleManager = provider.GetRequiredService<RoleManager<BaseRole>>();
 
@@ -201,12 +202,12 @@ public static partial class InitData
             }
         }
         return IdentityResult.Success;
-    }
+    }*/
 
     public class UserBuilder
     {
 
-        private readonly List<string> roles = new();
+        //private readonly List<string> roles = new();
 
         private readonly BaseUser _base;
 
@@ -217,11 +218,11 @@ public static partial class InitData
 
         public BaseUser Base { get => _base; }
 
-        public UserBuilder AddRole(string role)
+        /*public UserBuilder AddRole(string role)
         {
             roles.Add(role);
             return this;
-        }
+        }*/
 
         public async Task<IdentityResult> Create(UserManager<BaseUser> manager, string pwd)
         {
@@ -230,8 +231,8 @@ public static partial class InitData
             if (foundUser == null)
             {
                 var res = await manager.CreateAsync(_base, pwd);
-                if (res.Succeeded)
-                    return await manager.AddToRolesAsync(_base, roles);
+                //if (res.Succeeded)
+                //    return await manager.AddToRolesAsync(_base, roles);
                 return res;
             }
             return IdentityResult.Success;

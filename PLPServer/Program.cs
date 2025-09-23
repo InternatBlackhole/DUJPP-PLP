@@ -23,7 +23,12 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddAuthentication(opt =>
 { });
 
+/*builder.Services.AddAuthorization(opt =>
+{
+})*/
+
 builder.Services
+    // I will keep the role added since Identity doesn't like it when it's not specified :(
     .AddIdentity<BaseUser, BaseRole>(opt =>
     {
         opt.User.RequireUniqueEmail = true;
@@ -57,12 +62,12 @@ using (var scope = app.Services.CreateScope())
     var context = scope.ServiceProvider.GetRequiredService<PLPContext>();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 
-    var res = await InitData.CreateRoles(scope.ServiceProvider);
+    /*var res = await InitData.CreateRoles(scope.ServiceProvider);
     if (res != IdentityResult.Success)
     {
         app.Logger.LogError("Couldn't create roles! Error: {0}", res.Errors);
         throw new Exception("Couldn't create roles!");
-    }
+    }*/
 
     // In debug create database
     if (app.Environment.IsDevelopment())
