@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.CodeAnalysis.Options;
 using Microsoft.EntityFrameworkCore;
+using PLPServer;
 using PLPServer.Controllers;
 using PLPServer.Data;
 using PLPServer.Models;
@@ -17,15 +19,20 @@ builder.Services.AddDbContextFactory<PLPContext>(opt =>
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Version = "v1",
+        Title = "Version 1"
+    });
+
+    options.DocumentFilter<ServersDocumentFilter>();
+});
 
 // ASP.NET Core Identity - cookies and supported, for JWT do something different
 builder.Services.AddAuthentication(opt =>
 { });
-
-/*builder.Services.AddAuthorization(opt =>
-{
-})*/
 
 builder.Services
     // I will keep the role added since Identity doesn't like it when it's not specified :(
@@ -51,6 +58,7 @@ builder.Services.ConfigureApplicationCookie(opts =>
 
 var app = builder.Build();
 
+//TODO replace with Configuration
 var dotnetWatchVar = Environment.GetEnvironmentVariable("DOTNET_WATCH_ITERATION");
 var dotnetWatchCounter = string.IsNullOrEmpty(dotnetWatchVar) ? 0 : int.Parse(dotnetWatchVar);
 
@@ -88,11 +96,6 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-using (var scope = app.Services.CreateScope())
-{
-    
-}
-
 // After DB init 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -100,7 +103,9 @@ if (app.Environment.IsDevelopment())
     app.UseDeveloperExceptionPage();
 
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(opt =>
+    {
+    });
 }
 else
 {

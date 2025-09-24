@@ -40,10 +40,18 @@
         "INDEBUGGER": "true"
       }
     },
+    "httpsDocker": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "applicationUrl": "https://*:7222;http://*:5077",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
     "httpDocker": {
       "commandName": "Project",
       "dotnetRunMessages": true,
-      "applicationUrl": "http://0.0.0.0:5077",
+      "applicationUrl": "http://*:5077",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
