@@ -1,5 +1,22 @@
 
 services:
+
+  proxy:
+    image: nginx:1.28
+    depends_on:
+      - server
+    restart: always
+    ports:
+      - "${HTTP_HOST:?HTTP_HOST env var not given!}:80"
+      - "${HTTPS_HOST:?HTTPS_HOST env var not given!}:443"
+    environment:
+      - PROXY_PASS_ADDRESS=http://server:5077/
+    networks:
+      - plp-network
+    volumes:
+      - ./configs/ssl:/etc/nginx/ssl:ro
+      - ./configs/nginx-templates:/etc/nginx/templates:ro
+
   db:
     image: postgres:17
     restart: always
@@ -20,20 +37,21 @@ services:
     depends_on:
       - db
     environment:
-      DATABASE_URL: ${DATABASE_URL}
+      ConnectionStrings__MainDatabase: "Host=db:5432;Database=plp_database;Username=postgres;Password=postgres;"
+      API_BASE_URLS: "http://${HTTP_HOST:?HTTP_HOST env var not given!}/api;https://${HTTPS_HOST:?HTTPS_HOST env var not given!}/api"
     volumes:
       - ./PLPServer:/app:ro
-      - csobj:/app/obj:rw
-      - ./PLPServer/bin:/app/bin:rw
-    command: "dotnet watch run --launch-profile httpDocker --non-interactive" # add --non-interactive?
+      - serverObj:/app/obj:rw
+      - serverBin:/app/bin:rw
+    command: "dotnet watch run --launch-profile httpDocker" # add --non-interactive?
     working_dir: /app
-    #tty: true
-    #stdin_open: true
+    tty: true
+    stdin_open: true
     networks:
       - plp-network
-    ports:
-      - "127.0.0.1:5077:5077"
-      #- "127.0.0.1:5443:443"
+    #ports:
+      #- "127.0.0.1:5077:5077"
+      #- "127.0.0.1:7222:7222"
     develop:
       watch:
         - action: sync
@@ -48,4 +66,5 @@ networks:
 
 volumes:
   pgdata:
-  csobj:
+  serverObj:
+  serverBin:
