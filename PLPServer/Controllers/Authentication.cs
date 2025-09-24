@@ -115,6 +115,7 @@ public static class Authentication
             Id = user.Id,
             Email = user.Email ?? "",
             UserName = user.UserName ?? "",
+            Role = user.UserToRole()
         });
     }
 
@@ -123,5 +124,6 @@ public static class Authentication
         public Guid Id { get; set; }
         public required string UserName { get; set; }
         public required string Email { get; set; }
+        public string? Role { get; set; }
     }
 }
