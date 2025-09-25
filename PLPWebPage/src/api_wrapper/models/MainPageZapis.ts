@@ -51,4 +51,9 @@ export interface MainPageZapis {
      * @memberof MainPageZapis
      */
     znesekPogodbe: number;
+    /**
+     * @type {string}
+     * @memberof MainPageZapis
+     */
+    id: string;
 }

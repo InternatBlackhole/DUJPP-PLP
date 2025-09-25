@@ -1,7 +1,7 @@
 <template>
   <div class="login-container">
     <form @submit.prevent="handleSubmit" class="login-form">
-      <h2>Login</h2>
+      <h2>Prijava</h2>
 
       <div class="form-group">
         <label for="email">Email</label>
@@ -12,23 +12,28 @@
           required
           pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}"
           title="Please enter a valid email address"
-          placeholder="Enter your email"
+          placeholder="Vnesite email"
         />
       </div>
 
       <div class="form-group">
-        <label for="password">Password</label>
+        <label for="password">Geslo</label>
         <input
           type="password"
           id="password"
           v-model="password"
           required
-          placeholder="Enter your password"
+          placeholder="Vnesite geslo"
         />
       </div>
 
+      <div class="form-group remember-me">
+        <input type="checkbox" id="remember" v-model="rememberSession" />
+        <label for="remember">Zapomni si me</label>
+      </div>
+
       <div v-if="error" class="error-message">{{ error }}</div>
-      <button type="submit">Login</button>
+      <button type="submit">Prijava</button>
     </form>
   </div>
 </template>
@@ -43,6 +48,7 @@ const { auth } = useApi();
 const email = ref("");
 const password = ref("");
 const error = ref("");
+const rememberSession = ref(false);
 
 const handleSubmit = () =>
   auth
@@ -52,6 +58,7 @@ const handleSubmit = () =>
         password: password.value,
       },
       useCookies: true,
+      useSessionCookies: rememberSession.value
     })
     .pipe(
       timeout({
@@ -93,6 +100,24 @@ const handleSubmit = () =>
 
 .form-group {
   margin-bottom: 20px;
+}
+
+.remember-me {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 4px;
+}
+
+.remember-me input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+}
+
+.remember-me label {
+  display: inline;
+  margin: 0;
+  cursor: pointer;
 }
 
 label {

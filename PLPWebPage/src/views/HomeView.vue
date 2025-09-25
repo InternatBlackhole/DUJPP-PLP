@@ -3,16 +3,16 @@
     <header class="home-header">
       <div class="header-content">
         <div>
-          <h1>Welcome to PLP</h1>
-          <p v-if="userInfo" class="user-info">Logged in as: {{ userInfo.email }}</p>
+          <h1>Dobrodošli</h1>
+          <p v-if="userInfo" class="user-info">Prijavljeni kot: {{ userInfo.email }} <span v-if="userInfo.role">({{ userInfo.role }})</span></p>
         </div>
         <button @click="handleLogout" class="logout-button">Logout</button>
       </div>
       <nav class="main-nav">
         <ul>
-          <li><RouterLink to="/zapisi">Records</RouterLink></li>
-          <li><RouterLink to="/linije">Lines</RouterLink></li>
-          <li><RouterLink to="/pogodbe">Contracts</RouterLink></li>
+          <li><RouterLink to="/zapisi">Zapisi</RouterLink></li>
+          <li><RouterLink to="/linije">Linije</RouterLink></li>
+          <li><RouterLink to="/pogodbe">Pogodbe</RouterLink></li>
         </ul>
       </nav>
     </header>

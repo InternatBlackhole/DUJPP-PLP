@@ -1,20 +1,29 @@
 <template>
   <div class="contracts-container">
-    <h2>Contracts</h2>
+    <h2>Pogodbe</h2>
     <div class="contracts-content">
-      <p v-if="loading">Loading...</p>
+      <p v-if="loading">Nalagam...</p>
       <p v-else-if="error" class="error-message">{{ error }}</p>
       <DataTable
         v-else
         :headers="tableHeaders"
         :data="pagedContracts"
-        :rowKey="row => (row as any).id"
+        :rowKey="(row) => (row as any).id"
         :page="page"
         :pageSize="pageSize"
         :total="contracts.length"
         @update:page="onPageChange"
         @update:pageSize="onPageSizeChange"
-      />
+      >
+        <template #header="{ headers }">
+          <th v-for="header in headers" :key="header.key">{{ header.label }}</th>
+        </template>
+        <template #row="{ row }">
+          <td v-for="header in tableHeaders" :key="header.key">
+            {{ (row as any)[header.key] }}
+          </td>
+        </template>
+      </DataTable>
     </div>
   </div>
 </template>
@@ -35,7 +44,7 @@ const pageSize = ref(10);
 
 const tableHeaders = [
   { key: "id", label: "ID" },
-  { key: "linijaId", label: "Linija ID" },
+  { key: "linijaId", label: "ID Linije" },
   { key: "znesek", label: "Znesek" },
 ];
 

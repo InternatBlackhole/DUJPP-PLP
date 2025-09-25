@@ -1,24 +1,33 @@
 <template>
   <div class="lines-container">
     <div class="lines-header">
-      <h2>Lines</h2>
-      <button @click="refreshData" class="refresh-btn">Refresh Data</button>
+      <h2>Linije</h2>
+      <!--<button @click="refreshData" class="refresh-btn">Refresh Data</button>-->
     </div>
 
     <div class="lines-content">
-      <p v-if="loading">Loading...</p>
+      <p v-if="loading">Nalagam...</p>
       <p v-else-if="error" class="error-message">{{ error }}</p>
       <DataTable
         v-else
         :headers="tableHeaders"
         :data="pagedLines"
-        :rowKey="row => (row as any).id"
+        :rowKey="(row) => (row as any).id"
         :page="page"
         :pageSize="pageSize"
         :total="lines.length"
         @update:page="onPageChange"
         @update:pageSize="onPageSizeChange"
-      />
+      >
+        <template #header="{ headers }">
+          <th v-for="header in headers" :key="header.key">{{ header.label }}</th>
+        </template>
+        <template #row="{ row }">
+          <td v-for="header in tableHeaders" :key="header.key">
+            {{ (row as any)[header.key] }}
+          </td>
+        </template>
+      </DataTable>
     </div>
   </div>
 </template>
@@ -48,7 +57,7 @@ const lines = useSessionStorage<SimpleLinija[]>("linije-data", []);
 // Table configuration
 const tableHeaders = [
   { key: "id", label: "ID" },
-  { key: "ime", label: "Name" },
+  { key: "ime", label: "Ime" },
 ];
 
 const pagedLines = computed(() => {
@@ -83,9 +92,9 @@ const fetchLines = async () => {
   }
 };
 
-const refreshData = () => {
+/*const refreshData = () => {
   fetchLines();
-};
+};*/
 
 // Initial data fetch
 onMounted(() => {

@@ -1,8 +1,8 @@
 <template>
   <div class="records-container">
-    <h2>Records</h2>
+    <h2>Zapisi</h2>
     <div class="records-content">
-      <p v-if="loading">Loading...</p>
+      <p v-if="loading">Nalagam...</p>
       <p v-else-if="error" class="error-message">{{ error }}</p>
       <DataTable
         v-else
@@ -14,19 +14,36 @@
         :total="total"
         @update:page="onPageChange"
         @update:pageSize="onPageSizeChange"
-        v-bind="{}"
-      />
+      >
+        <template #header="{ headers }">
+          <th v-for="header in headers" :key="header.key">{{ header.label }}</th>
+          <th v-if="canEdit">Akcije</th>
+        </template>
+        <template #row="{ row }">
+          <td v-for="header in tableHeaders" :key="header.key">
+            {{
+              header.key === "zacetekVoznje" || header.key === "konecVoznje"
+                ? formatDate((row as any)[header.key])
+                : (row as any)[header.key]
+            }}
+          </td>
+          <td v-if="canEdit">
+            <button @click="deleteEntry(row.id)">Izbriši</button>
+          </td>
+        </template>
+      </DataTable>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from "vue";
+import { ref, onMounted, watch, computed } from "vue";
 import { useApi } from "@/composables/useApi";
 import { firstValueFrom } from "rxjs";
 import DataTable from "./common/DataTable.vue";
 import type { MainPageZapis } from "@/api_wrapper/models";
 import { useRoute, useRouter } from "vue-router";
+import { useUserInfo } from "@/utils/auth";
 
 const { zapisi } = useApi();
 const loading = ref(false);
@@ -35,21 +52,34 @@ const records = ref<MainPageZapis[]>([]);
 const total = ref(0);
 const page = ref(1);
 const pageSize = ref(10);
+const currentUser = useUserInfo();
+const canEdit = computed(() => {
+  switch (currentUser.value?.role) {
+    case "Prevoznik":
+    case "Admin":
+      return true;
+    default:
+      return false;
+  }
+});
 
 const route = useRoute();
 const router = useRouter();
 
 const tableHeaders = [
-  { key: "zacetekVoznje", label: "Start" },
-  { key: "konecVoznje", label: "End" },
-  { key: "linijaId", label: "Line ID" },
-  { key: "nazivLinije", label: "Line Name" },
-  { key: "narocnikId", label: "Client ID" },
-  { key: "nazivNarocnika", label: "Client Name" },
-  { key: "znesekPogodbe", label: "Contract Amount" },
+  { key: "zacetekVoznje", label: "Začetek" },
+  { key: "konecVoznje", label: "Konec" },
+  { key: "nazivLinije", label: "Ime linije" },
+  { key: "nazivNarocnika", label: "Ime naročnika" },
+  { key: "znesekPogodbe", label: "Znesek pogodbe" },
 ];
 
 const rowKey = (row: MainPageZapis) => row.zacetekVoznje + "-" + row.linijaId;
+
+const formatDate = (dateStr: string) => {
+  const date = new Date(dateStr);
+  return date.toLocaleString();
+};
 
 const fetchRecords = async () => {
   loading.value = true;
@@ -87,6 +117,20 @@ function onPageChange(newPage: number) {
 function onPageSizeChange(newSize: number) {
   pageSize.value = newSize;
   page.value = 1;
+}
+
+async function deleteEntry(id: string) {
+  error.value = "";
+  try {
+    await firstValueFrom(zapisi.zapisiIdDelete({ id }));
+    const index = records.value.findIndex((v) => v.id == id)
+    records.value.splice(index, 1);
+  } catch (err) {
+    window.alert("Izbris ni bil izveden!");
+    console.error("Failed to delete record:", err);
+  } finally {
+    loading.value = false;
+  }
 }
 
 watch([page, pageSize], () => {

@@ -2,29 +2,27 @@
   <table class="data-table">
     <thead>
       <tr>
-        <th v-for="header in headers" :key="header.key">{{ header.label }}</th>
+        <slot name="header" :headers="headers" />
       </tr>
     </thead>
     <tbody>
-      <tr v-for="row in data" :key="props.rowKey(row)">
-        <td v-for="header in headers" :key="header.key">
-          {{ (row as any)[header.key] }}
-        </td>
+      <tr v-for="(row, rowIndex) in data" :key="props.rowKey(row)">
+        <slot name="row" :row="row" :rowIndex="rowIndex" :headers="headers" />
       </tr>
     </tbody>
   </table>
   <div>
     <div class="pagination-controls">
       <button :disabled="page <= 1" @click="$emit('update:page', page - 1)">&lt;</button>
-      <span>Page {{ page }} of {{ totalPages }}</span>
+      <span>Stran {{ page }} od {{ totalPages }}</span>
       <button :disabled="page >= totalPages" @click="$emit('update:page', page + 1)">&gt;</button>
       <span class="page-size-select">
-        Rows per page:
+        Vnosov na stran:
         <select :value="pageSize" @change="onPageSizeChange">
           <option v-for="size in pageSizeOptions" :key="size" :value="size">{{ size }}</option>
         </select>
       </span>
-      <span v-if="showTotal">({{ props.total }} total)</span>
+      <span v-if="showTotal">({{ props.total }} skupaj)</span>
     </div>
   </div>
 </template>
@@ -35,6 +33,7 @@ const emit = defineEmits<{
   (e: "update:page", value: number): void;
   (e: "update:pageSize", value: number): void;
 }>();
+
 function onPageSizeChange(event: Event) {
   const target = event.target as HTMLSelectElement | null;
   if (target && target.value) {
@@ -77,16 +76,17 @@ const showTotal = computed(() => typeof props.total === "number" && props.total 
   background: white;
 }
 
-.data-table th,
-.data-table td {
-  padding: 12px;
+:slotted(.data-table th),
+:slotted(.data-table td) {
+  padding: 18px 8px;
   text-align: left;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.8);
 }
 
-.data-table th {
+:slotted(.data-table th) {
   font-weight: 600;
   background-color: #f8f9fa;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.7);
 }
 
 .data-table tbody tr:hover {
