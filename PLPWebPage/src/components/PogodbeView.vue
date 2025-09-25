@@ -17,10 +17,14 @@
       >
         <template #header="{ headers }">
           <th v-for="header in headers" :key="header.key">{{ header.label }}</th>
+          <th>Prenos datotek</th>
         </template>
         <template #row="{ row }">
           <td v-for="header in tableHeaders" :key="header.key">
             {{ (row as any)[header.key] }}
+          </td>
+          <td>
+            <input class="downloadBtn" type="image" src="/PDF_icon.svg" @click="downloadContract(row.id)" />
           </td>
         </template>
       </DataTable>
@@ -62,6 +66,10 @@ function onPageSizeChange(newSize: number) {
   page.value = 1;
 }
 
+function downloadContract(id: string | undefined) {
+  alert(`TODO: Prenos pogodbe z id ${id}`)
+}
+
 const fetchContracts = async () => {
   loading.value = true;
   error.value = "";
@@ -97,5 +105,10 @@ onMounted(() => {
   color: #dc3545;
   text-align: center;
   padding: 1rem;
+}
+
+.downloadBtn {
+  width: 24px;
+  height: 24px;
 }
 </style>
