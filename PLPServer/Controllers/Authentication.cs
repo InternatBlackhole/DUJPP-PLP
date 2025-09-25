@@ -66,7 +66,7 @@ public static class Authentication
         var isPersistant = (useCookies == true) && (useSessionCookies != true);
 
         if (!useCookiesScheme)
-            return TypedResults.Unauthorized();
+            return TypedResults.BadRequest("Token not supported");
 
         signInManager.AuthenticationScheme = useCookiesScheme ? IdentityConstants.ApplicationScheme : IdentityConstants.BearerScheme;
 
@@ -80,7 +80,7 @@ public static class Authentication
 
         if (!res.Succeeded)
         {
-            return TypedResults.Unauthorized();
+            return TypedResults.BadRequest("Email or password incorrect!");
         }
 
         //SignInManager should set the cookie

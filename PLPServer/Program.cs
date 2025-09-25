@@ -10,6 +10,14 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
+builder.Services.AddCors(opt =>
+{
+    if (builder.Environment.IsDevelopment())
+    {
+        opt.AddDefaultPolicy(pol => pol.AllowAnyHeader().AllowAnyOrigin().AllowAnyMethod());
+    }
+});
+
 builder.Services.AddControllers(opts => { });
 builder.Services.AddDbContextFactory<PLPContext>(opt =>
     opt//.UseLazyLoadingProxies()
@@ -114,8 +122,8 @@ else
 
 //app.UseHttpsRedirection();
 
-//app.UseRouting(); // maybe remove?
-
+app.UseRouting(); // maybe remove?
+app.UseCors();
 //app.UseCookiePolicy();
 
 app.UseAuthentication();
