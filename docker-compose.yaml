@@ -2,7 +2,12 @@
 services:
 
   proxy:
-    image: nginx:1.28
+    #image: nginx:1.28
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM nginx:1.28
+        COPY --chown=nginx:nginx ./configs/nginx-templates /etc/nginx/templates
     depends_on:
       - server
       - frontend-dev
@@ -17,27 +22,55 @@ services:
       - plp-network
     volumes:
       - ./configs/ssl:/etc/nginx/ssl:ro
-      - ./configs/nginx-templates:/etc/nginx/templates:ro
+    #  - ./configs/nginx-templates:/etc/nginx/templates:ro
     develop:
       watch:
-        - action: sync+restart
+        - action: sync+exec
           path: ./configs/nginx-templates
           target: /etc/nginx/templates
+          exec:
+            command: nginx -t && nginx -s reload
+        #- action: sync+restart
+        #  path: ./configs/ssl
+        #  target: /etc/nginx/ssl
 
   frontend-dev:
-    image: node:24-alpine
+    #image: node:24-alpine
+    build:
+      context: ./PLPWebPage
+      dockerfile_inline: |
+        FROM node:24
+        RUN useradd -ms /bin/sh -u 1001 app
+        USER app
+
+        WORKDIR /app
+        COPY --chown=app:app --chmod=644 package.json package-lock.json ./
+        #VOLUME /app/node_modules
+        RUN npm install
+
+        COPY --chown=app:app --chmod=744 . /app
     restart: always
-    user: "1000"
     environment:
       - VITE_API_BASE_URL=/api
       - VITE_HOST=${HTTP_HOST:?HTTP_HOST env var not given!}
     working_dir: /app
     networks:
       - plp-network
-    volumes:
-      - ./PLPWebPage/:/app:rw
+    #volumes:
+      #- ./PLPWebPage/node_modules:/app/node_modules:rw
     command: ["npm", "run", "dev", "--", "--port", "5173", "--host", "frontend-dev"]
-
+    develop:
+      watch:
+        - action: sync
+          path: ./PLPWebPage/
+          target: /app
+          ignore:
+            - node_modules/
+            - package.json
+            - package-lock.json
+        - action: rebuild
+          path: ./PLPWebPage/package.json
+          target: /app
 
   db:
     image: postgres:17
@@ -56,31 +89,37 @@ services:
   
   server:
     image: mcr.microsoft.com/dotnet/sdk:8.0
+    build:
+      context: ./PLPServer
+      dockerfile_inline: |
+        FROM mcr.microsoft.com/dotnet/sdk:8.0
+        RUN id -u server || useradd -ms /bin/sh -u 1001 server
+        USER server
+
+        WORKDIR /app
+        COPY --chown=server:server . /app
     depends_on:
       - db
     environment:
+      DOTNET_WATCH_RESTART_ON_RUDE_EDIT: true
+      DOTNET_USE_POLLING_FILE_WATCHER: false
       ConnectionStrings__MainDatabase: "Host=db:5432;Database=plp_database;Username=postgres;Password=postgres;"
       API_BASE_URLS: "http://${HTTP_HOST:?HTTP_HOST env var not given!}/api;https://${HTTPS_HOST:?HTTPS_HOST env var not given!}/api"
-    volumes:
-      - ./PLPServer:/app:ro
-      - serverObj:/app/obj:rw
-      - serverBin:/app/bin:rw
-    command: "dotnet watch run --launch-profile httpDocker" # add --non-interactive?
+    #volumes:
+      #- ./PLPServer:/app:ro
+      #- serverObj:/app/obj:rw
+      #- serverBin:/app/bin:rw
+    command: "dotnet watch run --launch-profile httpDocker --non-interactive" # --non-interactive automatically restarts on rude edits
     working_dir: /app
-    tty: true
-    stdin_open: true
+    #tty: true
+    #stdin_open: true
     networks:
       - plp-network
-    #ports:
-      #- "127.0.0.1:5077:5077"
-      #- "127.0.0.1:7222:7222"
     develop:
       watch:
         - action: sync
           path: ./PLPServer
           target: /app
-          ignore:
-            - "*.http"
 
 networks:
   plp-network:
@@ -88,5 +127,5 @@ networks:
 
 volumes:
   pgdata:
-  serverObj:
-  serverBin:
+  #serverObj:
+  #serverBin:
