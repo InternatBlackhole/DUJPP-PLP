@@ -27,12 +27,14 @@ const confObj: UserConfig = {
 }
 
 if(process.env.VITE_HOST) {
-  const [host, port] = process.env.VITE_HOST.split(/^https?:\/\/(.+):([0-9]{1,5})$/, 2)
+  const [host , port] = process.env.VITE_HOST.split(":")
+  console.info("VITE_HOST: " + process.env.VITE_HOST)
   confObj.server!.hmr = {
     protocol: "ws",
     host,
-    port: Number.parseInt(port)
+    port: Number.parseInt(port) || undefined
   } satisfies HmrOptions
+  console.info("hmr: " + JSON.stringify(confObj.server?.hmr) )
 }
 
 // https://vite.dev/config/
