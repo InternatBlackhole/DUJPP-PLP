@@ -10,7 +10,7 @@ map '$request_method $http_origin' $allow_cors {
 }
 
 log_format  proxy_log  '[$time_local] $remote_addr - $remote_user "$request_uri" '
-                      '$status $body_bytes_sent "$http_referer" '
+                      '$status "$http_referer" '
                       '"$http_user_agent" "$http_x_forwarded_for"'
                       ' Proxy: "$proxy_host" "$upstream_addr" response: "$upstream_status"';
 
