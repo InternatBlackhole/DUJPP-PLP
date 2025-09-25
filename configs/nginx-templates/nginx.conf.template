@@ -3,6 +3,12 @@ map $http_connection $connection_upgrade {
   default keep-alive;
 }
 
+map '$request_method $http_origin' $allow_cors {
+    '~^OPTIONS https?://(127\.0\.0\.0(:[0-9]{1,5})?|localhost)$'    OPTIONS;
+    '~^(GET|POST|PUT|DELETE) https?://(127\.0\.0\.0(:[0-9]{1,5})?|localhost)$' GET|POST|PUT|DELETE;
+    default 0;
+}
+
 server {
   listen 80 default_server;
   listen [::]:80 default_server;
@@ -11,7 +17,7 @@ server {
 
   http2 on;
 
-  server_name localhost;
+  server_name _;
 
   root /usr/share/nginx/html;
   index index.html;
@@ -25,21 +31,83 @@ server {
   ssl_ciphers   HIGH:!aNULL:!MD5;
 
   location ^~ /api/ {
-      proxy_pass         ${PROXY_PASS_ADDRESS};
-      proxy_http_version 1.1;
-      proxy_set_header   Upgrade $http_upgrade;
-      proxy_set_header   Connection $connection_upgrade;
-      proxy_set_header   Host $host;
-      proxy_cache_bypass $http_upgrade;
-      proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
-      proxy_set_header   X-Forwarded-Proto $scheme;
-      proxy_pass_request_headers on;
-      proxy_pass_request_body on;
-      proxy_redirect off;
-      proxy_intercept_errors off;
+    if ($allow_cors = OPTIONS) {
+      # https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Access-Control-Allow-Origin#cors_and_caching
+      add_header 'Vary' 'Origin' always;
+      add_header 'Access-Control-Allow-Origin' $http_origin;
+      add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, PUT, DELETE';
+      #
+      # Custom headers and headers various browsers *should* be OK with but aren't
+      #
+      add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range';
+      #
+      # Tell client that this pre-flight info is valid for 20 days
+      #
+      add_header 'Access-Control-Max-Age' 86400;
+      add_header 'Content-Type' 'text/plain; charset=utf-8';
+      add_header 'Content-Length' 0;
+      return 204;
+    }
+    #if ($allow_cors = GET|POST|PUT|DELETE) {
+    #  # https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Access-Control-Allow-Origin#cors_and_caching
+    #  add_header 'Vary' 'Origin' always;
+    #  add_header 'Access-Control-Allow-Origin' $http_origin always;
+    #  add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, PUT, DELETE' always;
+    #  add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;
+    #  add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range' always;
+    #}
+    proxy_pass         ${PROXY_PASS_ADDRESS};
+    proxy_http_version 1.1;
+    proxy_set_header   Upgrade $http_upgrade;
+    proxy_set_header   Connection $connection_upgrade;
+    proxy_set_header   Host $host;
+    proxy_cache_bypass $http_upgrade;
+    proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header   X-Forwarded-Proto $scheme;
+    proxy_pass_request_headers on;
+    proxy_pass_request_body on;
+    proxy_redirect off;
+    proxy_intercept_errors off;
   }
 
   location / {
-    try_files $uri $uri/ /index.html;
+    if ($allow_cors = OPTIONS) {
+        # https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Access-Control-Allow-Origin#cors_and_caching
+        add_header 'Vary' 'Origin' always;
+        add_header 'Access-Control-Allow-Origin' $http_origin;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, PUT, DELETE';
+        #
+        # Custom headers and headers various browsers *should* be OK with but aren't
+        #
+        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range';
+        #
+        # Tell client that this pre-flight info is valid for 20 days
+        #
+        add_header 'Access-Control-Max-Age' 86400;
+        add_header 'Content-Type' 'text/plain; charset=utf-8';
+        add_header 'Content-Length' 0;
+        return 204;
+    }
+    if ($allow_cors = GET|POST|PUT|DELETE) {
+        # https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Access-Control-Allow-Origin#cors_and_caching
+        add_header 'Vary' 'Origin' always;
+        add_header 'Access-Control-Allow-Origin' $http_origin always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, PUT, DELETE' always;
+        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;
+        add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range' always;
+    }
+    #try_files $uri $uri/ /index.html;
+    proxy_pass         ${PROXY_PASS_ADDRESS_VITE};
+    proxy_http_version 1.1;
+    proxy_set_header   Upgrade $http_upgrade;
+    proxy_set_header   Connection $connection_upgrade;
+    proxy_set_header   Host $host;
+    proxy_cache_bypass $http_upgrade;
+    proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header   X-Forwarded-Proto $scheme;
+    proxy_pass_request_headers on;
+    proxy_pass_request_body on;
+    proxy_redirect off;
+    #proxy_intercept_errors off;
   }
 }

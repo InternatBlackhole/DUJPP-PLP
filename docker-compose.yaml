@@ -5,17 +5,39 @@ services:
     image: nginx:1.28
     depends_on:
       - server
+      - frontend-dev
     restart: always
     ports:
       - "${HTTP_HOST:?HTTP_HOST env var not given!}:80"
       - "${HTTPS_HOST:?HTTPS_HOST env var not given!}:443"
     environment:
       - PROXY_PASS_ADDRESS=http://server:5077/
+      - PROXY_PASS_ADDRESS_VITE=http://frontend-dev:5173
     networks:
       - plp-network
     volumes:
       - ./configs/ssl:/etc/nginx/ssl:ro
       - ./configs/nginx-templates:/etc/nginx/templates:ro
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./configs/nginx-templates
+          target: /etc/nginx/templates
+
+  frontend-dev:
+    image: node:24-alpine
+    restart: always
+    user: "1000"
+    environment:
+      - VITE_API_BASE_URL=/api
+      - VITE_HOST=${HTTP_HOST:?HTTP_HOST env var not given!}
+    working_dir: /app
+    networks:
+      - plp-network
+    volumes:
+      - ./PLPWebPage/:/app:rw
+    command: ["npm", "run", "dev", "--", "--port", "5173", "--host", "frontend-dev"]
+
 
   db:
     image: postgres:17
@@ -25,8 +47,6 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: plp_database
-    ports:
-      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     networks:
