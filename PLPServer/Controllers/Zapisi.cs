@@ -50,6 +50,7 @@ public static class Zapisi
             throw new NullReferenceException("dbUser is null!");
         }
 
+        // ne potrebno ker že spodaj preverim?
         switch (user)
         {
             case Prevoznik:
@@ -65,7 +66,7 @@ public static class Zapisi
         if (zapis == null)
             return TypedResults.NotFound();
 
-        if (zapis.Pogodba!.PrevoznikId != user.Id)
+        if (user is not Administrator && zapis.Pogodba!.PrevoznikId != user.Id)
             return TypedResults.Forbid();
 
         mainDb.Zapisi.Remove(zapis);
@@ -328,6 +329,7 @@ public static class Zapisi
 
         var ret = zapisi.Select(z => new MainPageZapis()
         {
+            Id = z.Id,
             ZacetekVoznje = z.ZacetekVoznje,
             KonecVoznje = z.KonecVoznje,
             NazivLinije = z.Pogodba!.Linija!.Ime ?? "",
@@ -408,6 +410,8 @@ public static class Zapisi
 
     public record MainPageZapis : IHasZacetekVoznje
     {
+        [Required]
+        public required Guid Id { get; set; }
         public DateTime ZacetekVoznje { get; set; }
         public DateTime KonecVoznje { get; set; }
         public required Guid LinijaId { get; set; }
