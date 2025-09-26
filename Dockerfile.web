@@ -1,0 +1,15 @@
+FROM node:24 AS build
+WORKDIR /app
+COPY PLPWebPage/package*.json ./
+RUN npm install
+COPY PLPWebPage/ .
+ENV VITE_API_BASE_URL=/api
+RUN npm run build
+
+FROM nginx:1.28-alpine
+COPY --from=build /app/dist /usr/share/nginx/html
+COPY configs/nginx-templates/prod.conf.template /etc/nginx/templates/default.conf.template
+VOLUME [ "/etc/nginx/ssl" ]
+EXPOSE 80
+EXPOSE 443
+CMD ["nginx", "-g", "daemon off;"]

@@ -9,13 +9,9 @@ services:
       POSTGRES_USER_FILE: /run/secrets/postgres-user
       POSTGRES_PASSWORD_FILE: /run/secrets/postgres-password
       POSTGRES_DB: plp_database
-      #POSTGRES_INITDB_ARGS_FILE: /run/secrets/postgres-initdb-args # if i want more, look into custom image ala https://hub.docker.com/_/postgres#initialization-scripts
     secrets:
       - postgres-user
       - postgres-password
-      #- postgres-initdb-args
-    ports:
-      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     networks:
@@ -25,15 +21,32 @@ services:
       - db
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.backend
+      args:
+        - configuration=Project
     environment:
-      #TODO: make custom user
-      DATABASE_URL: "postgresql://${POSTGRES_ROOT_USER}:${POSTGRES_ROOT_PWD}@db:5432/plp_database"
+      ConnectionStrings__MainDatabase: "Host=db:5432;Database=plp_database;Username=${POSTGRES_ROOT_USER};Password=${POSTGRES_ROOT_PWD};"
+      ASPNETCORE_URLS: "http://*:5077"
+      INDEBUGGER: true # ponastavi bazo ob start up
+      ASPNETCORE_ENVIRONMENT: "Development"
     networks:
       - plp-network
+  proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    volumes:
+      - ./configs/ssl:/etc/nginx/ssl:ro
+    networks:
+      - plp-network
+    depends_on:
+      - server
     ports:
-      - 127.0.0.1:5001:80
-  #TODO: add reverse proxy to prod version
+      - 127.0.0.1:3000:80
+      - 127.0.0.1:3443:443
+    environment:
+      SERVER_NAME: localhost
+      PROXY_PASS_ADDRESS: http://server:5077/
     
 
 networks:
@@ -48,5 +61,3 @@ secrets:
     environment: POSTGRES_ROOT_USER
   postgres-password:
     environment: POSTGRES_ROOT_PWD
-  #postgres-initdb-args:
-  #  file: ./secrets/postgres-initdb-args.txt

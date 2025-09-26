@@ -1,0 +1,14 @@
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+ARG configuration=Debug
+WORKDIR /src
+USER root
+COPY ./PLPServer/ .
+RUN dotnet publish -c ${configuration} -o /app/publish
+
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
+WORKDIR /app
+RUN useradd -ms /bin/sh -u 1001 server
+COPY --from=build /app/publish .
+USER server
+EXPOSE 5077
+ENTRYPOINT ["dotnet", "PLPServer.dll"]
