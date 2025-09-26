@@ -2,8 +2,8 @@
 
 | Naloga | Zahtevnost | Previden čas |
 | ------ | ---------- | ------------ |
-| ✅ postavitev razvojnega okolja | nizka | 1 ura |
-| ✅ razvoj podatkovnega modela | nizka | 2 ura |
+| ✅ postavitev razvojnega okolja | nizka | 2 uri |
+| ✅ razvoj podatkovnega modela | nizka | 1 ura |
 | ✅ razvoj sistema avtentikacije | srednja | 3 ura |
 | ✅ razvoj API na zalednem sistemu | visoka | 5 ure |
-| ❌ prikaz podatkov na frontend | srednja | 3 ure |
+| ✅ prikaz podatkov na frontend | srednja | 4 ure |
