@@ -40,7 +40,11 @@ export class ServerConfiguration<T extends { [key: string]: string }> {
     }
 }
 
-const server1 = new ServerConfiguration<{  }>("http://127.0.0.1:5000/api", {  }, "");
-const server2 = new ServerConfiguration<{  }>("https://127.0.0.1:5443/api", {  }, "");
+const getApiBaseUrl = () => {
+    // VITE_API_BASE_URL should be something like /api or http://example.com/api
+    return import.meta.env.VITE_API_BASE_URL || '/api';
+};
 
-export const servers = [server1, server2];
+const server1 = new ServerConfiguration<{  }>(getApiBaseUrl(), {  }, "Default API Server");
+
+export const servers = [server1];
